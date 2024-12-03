@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:studymate/pages/Friends.dart';
 import 'package:studymate/pages/Lessons.dart';
 import 'package:studymate/pages/Notes.dart';
+import 'package:studymate/pages/Profile.dart';
 import 'package:studymate/pages/Signin.dart';
 
 class Dashboard extends StatelessWidget {
@@ -218,7 +219,7 @@ class ContactManagementScreen extends StatelessWidget {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => Friends() ),
+                  MaterialPageRoute(builder: (context) => Friends()),
                 );
               },
               style: ElevatedButton.styleFrom(
@@ -263,7 +264,12 @@ class ContactManagementScreen extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => Profile()),
+                );
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.black,
                 shape: RoundedRectangleBorder(

@@ -1,8 +1,11 @@
+import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:studymate/pages/AddNote.dart';
+import 'package:studymate/pages/EditNote.dart';
+import 'package:studymate/pages/ViewNote.dart';
 
 class AllNotes extends StatefulWidget {
   const AllNotes({super.key});
@@ -12,8 +15,8 @@ class AllNotes extends StatefulWidget {
 }
 
 class _AllNotesState extends State<AllNotes> {
-  List<Map<String, dynamic>> notes = []; // Array to store contacts
-  List<Map<String, dynamic>> filteredNotes = []; // Array for filtered contacts
+  List<Map<String, dynamic>> notes = [];
+  List<Map<String, dynamic>> filteredNotes = [];
   TextEditingController searchController =
       TextEditingController(); // Controller for search input
   bool isLoading = true; // Variable to indicate if data is still loading
@@ -21,7 +24,7 @@ class _AllNotesState extends State<AllNotes> {
   @override
   void initState() {
     super.initState();
-    fetchNotes(); // Fetch contacts when the page loads
+    fetchNotes();
   }
 
   Future<void> fetchNotes() async {
@@ -40,12 +43,15 @@ class _AllNotesState extends State<AllNotes> {
             .get()
             .then((QuerySnapshot querySnapshot) {
           setState(() {
-            notes.clear(); // Clear the list before adding new contacts
+            notes.clear();
             for (var doc in querySnapshot.docs) {
               notes.add({
                 'id': doc.id,
-                'name': doc['name'],
-                'number': doc['number'],
+                'title': doc['title'],
+                'subject': doc['subject'],
+                'content': doc['content'],
+                'addedBy': doc['addedBy'],
+                'visibility': doc['visibility'],
               });
             }
             isLoading = false;
@@ -63,10 +69,17 @@ class _AllNotesState extends State<AllNotes> {
     }
   }
 
-  void filterContacts(String query) {
-    List<Map<String, dynamic>> filtered = notes.where((contact) {
-      return contact['name'].toLowerCase().contains(query.toLowerCase()) ||
-          contact['number'].contains(query);
+  void filterNotes(String query) {
+    List<Map<String, dynamic>> filtered = notes.where((note) {
+      final title = note['title'].toLowerCase();
+      final subject = note['subject'].toLowerCase();
+      final content = note['content'].toLowerCase();
+      final searchQuery = query.toLowerCase();
+
+      // Check if the query matches the title, subject, or content
+      return title.contains(searchQuery) ||
+          subject.contains(searchQuery) ||
+          content.contains(searchQuery);
     }).toList();
 
     setState(() {
@@ -76,6 +89,31 @@ class _AllNotesState extends State<AllNotes> {
 
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: Center(
+          child: Text(
+            'All Notes',
+            style: GoogleFonts.poppins(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const Addnote()),
+              ).then((value) {
+                fetchNotes();
+              });
+            },
+          ),
+        ],
+      ),
       body: Container(
         width: double.infinity,
         decoration: const BoxDecoration(
@@ -87,7 +125,7 @@ class _AllNotesState extends State<AllNotes> {
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(18.0),
+          padding: const EdgeInsets.all(8.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -100,64 +138,13 @@ class _AllNotesState extends State<AllNotes> {
                   child: Column(
                     children: [
                       Padding(
-                        padding: const EdgeInsets.only(top: 50.0),
-                        child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => Addnote()),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.black,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 20),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Expanded(
-                                  child: Center(
-                                    child: Text(
-                                      "Add Note",
-                                      style: GoogleFonts.poppins(
-                                        color: Colors.white,
-                                        fontSize: 30,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey[200],
-                                    shape: BoxShape.circle,
-                                  ),
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: const Icon(
-                                    Icons.arrow_forward,
-                                    color: Colors.black,
-                                    size: 30,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      Padding(
                           padding: const EdgeInsets.only(top: 10),
                           child: Padding(
                             padding: const EdgeInsets.only(top: 20.0),
                             child: TextField(
                               controller: searchController,
                               onChanged: (value) {
-                                filterContacts(value);
+                                filterNotes(value);
                               },
                               decoration: InputDecoration(
                                 labelText: 'Search Notes',
@@ -195,7 +182,7 @@ class _AllNotesState extends State<AllNotes> {
                               ? const Center(
                                   child: Text("No Matching Notes"),
                                 )
-                              : buildContactList(filteredNotes),
+                              : buildNotesList(filteredNotes),
                         )
                       else
                         Expanded(
@@ -203,7 +190,7 @@ class _AllNotesState extends State<AllNotes> {
                               ? const Center(
                                   child: Text("No Notes Available"),
                                 )
-                              : buildContactList(notes),
+                              : buildNotesList(notes),
                         ),
                     ],
                   ),
@@ -215,22 +202,22 @@ class _AllNotesState extends State<AllNotes> {
     );
   }
 
-  Widget buildContactList(List<Map<String, dynamic>> contactList) {
+  Widget buildNotesList(List<Map<String, dynamic>> notesList) {
     return ListView.builder(
-      itemCount: contactList.length,
+      itemCount: notesList.length,
       itemBuilder: (context, index) {
-        final contact = contactList[index];
+        final note = notesList[index];
         return ListTile(
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(contact['name'],
+              Text(note['title'],
                   style: GoogleFonts.poppins(
                     color: const Color.fromARGB(255, 0, 0, 0),
                     fontSize: 17,
                     fontWeight: FontWeight.bold,
                   )),
-              Text(contact['number'],
+              Text(note['subject'],
                   style: GoogleFonts.poppins(
                     color: Color.fromARGB(255, 0, 0, 0),
                     fontSize: 15,
@@ -240,17 +227,33 @@ class _AllNotesState extends State<AllNotes> {
           ),
           leading: CircleAvatar(
             backgroundColor: Color.fromARGB(255, 0, 0, 0),
-            child: Text(contact['name'][0],
+            child: Text(note['title'][0],
                 style: GoogleFonts.poppins(
                   color: Color.fromARGB(255, 255, 255, 255),
                   fontSize: 17,
                   fontWeight: FontWeight.bold,
                 )),
           ),
-          trailing: const SizedBox(
+          trailing: SizedBox(
             width: 70,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                GestureDetector(
+                  child: const Icon(Icons.open_in_new),
+                  onTap: () async {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => Viewnote(note: note),
+                      ),
+                    );
+                    if (result == true) {
+                      fetchNotes();
+                    }
+                  },
+                ),
+              ],
             ),
           ),
         );
