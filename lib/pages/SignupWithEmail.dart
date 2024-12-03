@@ -254,6 +254,7 @@ class _SignupwithemailState extends State<Signupwithemail> {
       );
 
       addDetails();
+      //hi
     }
   }
 
