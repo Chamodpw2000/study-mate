@@ -12,18 +12,16 @@ class Profile extends StatefulWidget {
 }
 
 class _ProfileState extends State<Profile> {
- TextEditingController emailc = TextEditingController();
+  TextEditingController emailc = TextEditingController();
   TextEditingController fnamec = TextEditingController();
   TextEditingController lnamec = TextEditingController();
   final user = FirebaseAuth.instance.currentUser;
   Map<String, dynamic>? userData; // Variable to store user details
 
-  
-
   bool isEditing = false;
   bool isLoading = true;
 
-Future<void> updateUserDetails() async {
+  Future<void> updateUserDetails() async {
     if (user != null) {
       try {
         // Check if the new email is already registered
@@ -80,7 +78,7 @@ Future<void> updateUserDetails() async {
     }
   }
 
- Future<void> fetchUserDetails() async {
+  Future<void> fetchUserDetails() async {
     if (user != null) {
       try {
         // Fetch user document from Firestore where the document ID matches the user's UID
@@ -271,100 +269,6 @@ Future<void> updateUserDetails() async {
                       ),
                     ),
                     const SizedBox(height: 50),
-                    if (isEditing)
-                      ElevatedButton(
-                        onPressed: () {
-                          setState(() {
-                            isEditing = false; // Exit editing mode
-                          });
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 20),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Expanded(
-                                  child: Center(
-                                      child: Text("Cancle",
-                                          style: GoogleFonts.poppins(
-                                            color: Colors.white,
-                                            fontSize: 30,
-                                            fontWeight: FontWeight.bold,
-                                          )))),
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[200],
-                                  shape: BoxShape.circle,
-                                ),
-                                padding: const EdgeInsets.all(8.0),
-                                child: const Icon(
-                                  Icons.arrow_forward,
-                                  color: Colors.black,
-                                  size: 30,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    if (!isEditing)
-                      ElevatedButton(
-                        onPressed: () async {
-                          AwesomeDialog(
-                            context: context,
-                            dialogType: DialogType.info,
-                            animType: AnimType.scale,
-                            title: 'Confirm',
-                            desc: 'Are you sure you want to logout?',
-                            btnCancelOnPress: () {},
-                            btnOkOnPress: () async {
-                              await FirebaseAuth.instance.signOut();
-                            },
-                          ).show();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 20),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Expanded(
-                                  child: Center(
-                                      child: Text("Logout",
-                                          style: GoogleFonts.poppins(
-                                            color: Colors.white,
-                                            fontSize: 30,
-                                            fontWeight: FontWeight.bold,
-                                          )))),
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[200],
-                                  shape: BoxShape.circle,
-                                ),
-                                padding: const EdgeInsets.all(8.0),
-                                child: const Icon(
-                                  Icons.arrow_forward,
-                                  color: Colors.black,
-                                  size: 30,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
                   ],
                 ),
               ),

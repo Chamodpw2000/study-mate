@@ -6,7 +6,6 @@ import 'package:studymate/pages/Signup.dart';
 class Home extends StatelessWidget {
   const Home({super.key});
 
-  
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -93,7 +92,7 @@ class ContactManagementScreen extends StatelessWidget {
                       ),
                       padding: const EdgeInsets.all(8.0),
                       child: const Icon(
-                        Icons.arrow_forward,
+                        Icons.login_rounded,
                         color: Colors.black,
                         size: 30,
                       ),
@@ -141,7 +140,7 @@ class ContactManagementScreen extends StatelessWidget {
                       ),
                       padding: const EdgeInsets.all(8.0),
                       child: const Icon(
-                        Icons.arrow_forward,
+                        Icons.login_outlined,
                         color: Colors.black,
                         size: 30,
                       ),
@@ -184,7 +183,7 @@ class ContactManagementScreen extends StatelessWidget {
                       ),
                       padding: const EdgeInsets.all(8.0),
                       child: const Icon(
-                        Icons.arrow_forward,
+                        Icons.info_outline_rounded,
                         color: Colors.black,
                         size: 30,
                       ),

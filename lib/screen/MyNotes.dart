@@ -89,6 +89,19 @@ class _MyNotesState extends State<MyNotes> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          'My Notes',
+          style: GoogleFonts.poppins(
+            color: Colors.black,
+            fontSize: 25,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: Colors.white,
+        centerTitle: true,
+        elevation: 0.0,
+      ),
       body: Container(
         width: double.infinity,
         decoration: const BoxDecoration(
@@ -113,7 +126,7 @@ class _MyNotesState extends State<MyNotes> {
                   child: Column(
                     children: [
                       Padding(
-                        padding: const EdgeInsets.only(top: 50.0),
+                        padding: const EdgeInsets.only(top: 5.0),
                         child: ElevatedButton(
                           onPressed: () {
                             Navigator.push(
@@ -153,7 +166,7 @@ class _MyNotesState extends State<MyNotes> {
                                   ),
                                   padding: const EdgeInsets.all(8.0),
                                   child: const Icon(
-                                    Icons.arrow_forward,
+                                    Icons.add,
                                     color: Colors.black,
                                     size: 30,
                                   ),

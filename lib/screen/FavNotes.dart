@@ -118,7 +118,7 @@ class _FavNotesState extends State<FavNotes> {
       appBar: AppBar(
         title: Center(
           child: Text(
-            'All Notes',
+            'Favourites',
             style: GoogleFonts.poppins(
               fontSize: 24,
               fontWeight: FontWeight.bold,
@@ -164,7 +164,7 @@ class _FavNotesState extends State<FavNotes> {
                   child: Column(
                     children: [
                       Padding(
-                          padding: const EdgeInsets.only(top: 10),
+                          padding: const EdgeInsets.only(top: 0),
                           child: Padding(
                             padding: const EdgeInsets.only(top: 20.0),
                             child: TextField(

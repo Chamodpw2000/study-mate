@@ -34,37 +34,67 @@ class _AllNotesState extends State<AllNotes> {
 
     try {
       User? user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        String uid = user.uid;
 
-        FirebaseFirestore.instance
-            .collection('notes')
-            // .where('addedBy', isEqualTo: uid)
-            .get()
-            .then((QuerySnapshot querySnapshot) {
+      if (user != null) {
+        String currentUserEmail = user.email!;
+
+        // Fetch the current user's document by email
+        QuerySnapshot userQuerySnapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .where('email', isEqualTo: currentUserEmail)
+            .get();
+
+        // Ensure the user document exists
+        if (userQuerySnapshot.docs.isNotEmpty) {
+          // Get the user's friends array, default to an empty list if not present
+          Map<String, dynamic>? userData =
+              userQuerySnapshot.docs.first.data() as Map<String, dynamic>?;
+          List<dynamic> friends = userData?['friends'] ?? [];
+
+          // Fetch notes with public visibility or friends-only visibility
+          QuerySnapshot notesQuerySnapshot = await FirebaseFirestore.instance
+              .collection('notes')
+              .where('visibility', whereIn: ['Public', 'Friends Only']).get();
+
           setState(() {
             notes.clear();
-            for (var doc in querySnapshot.docs) {
-              notes.add({
-                'id': doc.id,
-                'title': doc['title'],
-                'subject': doc['subject'],
-                'content': doc['content'],
-                'addedBy': doc['addedBy'],
-                'visibility': doc['visibility'],
-              });
+
+            for (var doc in notesQuerySnapshot.docs) {
+              String addedBy = doc['addedBy'];
+              String visibility = doc['visibility'];
+
+              // Add notes based on visibility and friends array
+              if (visibility == 'Public' ||
+                  (visibility == 'Friends Only' && friends.contains(addedBy))) {
+                notes.add({
+                  'id': doc.id,
+                  'title': doc['title'],
+                  'subject': doc['subject'],
+                  'content': doc['content'],
+                  'addedBy': doc['addedBy'],
+                  'visibility': doc['visibility'],
+                });
+              }
             }
-            isLoading = false;
+
+            isLoading = false; // Loading finished
           });
-        });
+        } else {
+          print("User document not found for email: $currentUserEmail");
+          setState(() {
+            isLoading = false; // No user document
+          });
+        }
       } else {
+        print("No user is logged in.");
         setState(() {
-          isLoading = false;
+          isLoading = false; // No user logged in
         });
       }
     } catch (e) {
+      print('Error fetching notes: $e');
       setState(() {
-        isLoading = false;
+        isLoading = false; // Error occurred
       });
     }
   }
@@ -138,7 +168,7 @@ class _AllNotesState extends State<AllNotes> {
                   child: Column(
                     children: [
                       Padding(
-                          padding: const EdgeInsets.only(top: 10),
+                          padding: const EdgeInsets.only(top: 0),
                           child: Padding(
                             padding: const EdgeInsets.only(top: 20.0),
                             child: TextField(
