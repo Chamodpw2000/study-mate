@@ -43,233 +43,181 @@ class _SigninState extends State<Signin> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        width: double.infinity,
-        decoration: const BoxDecoration(
-         
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF90CAF9),
+            Color(0xFF64B5F6),
+            Color(0xFF42A5F5),
+            Color(0xFF2196F3),
+          ],
         ),
-        child: Padding(
-          padding: EdgeInsets.all(18.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              TextField(
-                controller: emailc,
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(20.0),
-                  ),
-
-                  hintStyle: GoogleFonts.poppins(
-                    color: Colors.black.withOpacity(0.7), // Label color
-                    fontSize: 20.0, // Label font size
-                    fontWeight: FontWeight.bold, // Label font weight
-                  ),
-                  hintText: "Email",
-                  fillColor: Colors.white, // Background color
-                  filled: true, // Enable the background color
-                ),
-              ),
-              SizedBox(height: 20.0),
-              TextField(
-                controller: passwordc,
-                obscureText:
-                    true, // This makes the input field a password field
-
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(20.0),
-                  ),
-
-                  hintStyle: GoogleFonts.poppins(
-                    color: Colors.black.withOpacity(0.7), // Label color
-                    fontSize: 20.0, // Label font size
-                    fontWeight: FontWeight.bold, // Label font weight
-                  ),
-                  hintText: "Password",
-                  fillColor: Colors.white, // Background color
-                  filled: true, // Enable the background color
-                ),
-              ),
-              SizedBox(height: 50.0),
-              if (errorMessage != null) // Show error message if available
-                Container(
-                  alignment: Alignment
-                      .center, // Center-aligns the text within the container
-                  decoration: BoxDecoration(
-                    color:
-                        Colors.white.withOpacity(0.5), // White with 50% opacity
-                    borderRadius: BorderRadius.circular(
-                        8.0), // Rounded corners (optional)
-                  ),
-                  padding: EdgeInsets.symmetric(
-                      horizontal: 8.0,
-                      vertical: 4.0), // Padding around the text
-                  child: Text(
-                    errorMessage!,
-                    textAlign:
-                        TextAlign.center, // Center-aligns the text itself
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 60),
+                  Text(
+                    'Welcome Back',
                     style: GoogleFonts.poppins(
-                      color: Colors.red,
-                      fontSize: 20.0,
+                      fontSize: 32,
                       fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
                   ),
-                ),
-              const SizedBox(height: 20.0),
-              ElevatedButton(
-                onPressed: () async {
-                  {
-                    // Clear previous error message
-                    setState(() {
-                      errorMessage = null;
-                    });
-
-                    // Validate fields
-                    if (emailc.text.isEmpty) {
-                      setState(() {
-                        errorMessage = 'Please enter your email.';
-                      });
-                      return;
-                    }
-
-                    if (passwordc.text.isEmpty || passwordc.text.length < 6) {
-                      setState(() {
-                        errorMessage =
-                            'Please enter a valid password (min 6 characters).';
-                      });
-                      return;
-                    }
-
-                    // Attempt to log in
-                    try {
-                      await login();
-                      // If login successful, clear fields
-                      emailc.clear();
-                      passwordc.clear();
-                    } on FirebaseAuthException catch (e) {
-                      // Handle Firebase authentication errors
-                      setState(() {
-                        print(e.code);
-                        switch (e.code) {
-                          case 'invalid-credential':
-                            errorMessage =
-                                'User name and password do not match. Please try again.';
-                            break;
-                          case 'wrong-password':
-                            errorMessage =
-                                'Incorrect password. Please try again.';
-                            break;
-                          case 'invalid-email':
-                            errorMessage =
-                                'Invalid email format. Please check your email.';
-                            break;
-                          case 'user-disabled':
-                            errorMessage =
-                                'This user account has been disabled.';
-                            break;
-                          case 'network-request-failed':
-                            errorMessage =
-                                'Network error! Please check your connection.';
-                            break;
-                          default:
-                            errorMessage =
-                                'An unexpected error occurred. Please try again.';
-                        }
-                      });
-                    } catch (e) {
-                      setState(() {
-                        errorMessage =
-                            'An error occurred. Please try again later.';
-                      });
-                    }
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF9FB8C4),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
+                  const SizedBox(height: 40),
+                  _buildTextField(
+                    controller: emailc,
+                    hint: "Email",
+                    icon: Icons.email_outlined,
                   ),
-                ),
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Expanded(
-                        child: Center(
-                          child: Text(
-                            "Sign In",
-                            style: GoogleFonts.poppins(
-                              color: const Color(0xFF104D6C),
-                              fontSize: 30,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Color.fromARGB(255, 255, 255, 255),
-                          shape: BoxShape.circle,
-                        ),
-                        padding: const EdgeInsets.all(8.0),
-                        child: const Icon(
-                          Icons.arrow_forward,
-                          color: Color.fromARGB(255, 0, 0, 0),
-                          size: 30,
-                        ),
-                      ),
-                    ],
+                  const SizedBox(height: 20),
+                  _buildTextField(
+                    controller: passwordc,
+                    hint: "Password",
+                    icon: Icons.lock_outline,
+                    isPassword: true,
                   ),
-                ),
+                  const SizedBox(height: 20),
+                  if (errorMessage != null)
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        errorMessage!,
+                        style: GoogleFonts.poppins(
+                          color: Colors.red,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  const SizedBox(height: 40),
+                  _buildButton(
+                    text: "Sign In",
+                    icon: Icons.login_rounded,
+                    onPressed: () async {
+                      setState(() => errorMessage = null);
+                      if (emailc.text.isEmpty) {
+                        setState(
+                            () => errorMessage = 'Please enter your email.');
+                        return;
+                      }
+                      if (passwordc.text.isEmpty || passwordc.text.length < 6) {
+                        setState(() => errorMessage =
+                            'Please enter a valid password (min 6 characters).');
+                        return;
+                      }
+                      try {
+                        await login();
+                        emailc.clear();
+                        passwordc.clear();
+                      } on FirebaseAuthException catch (e) {
+                        setState(() {
+                          errorMessage = _getErrorMessage(e.code);
+                        });
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  _buildButton(
+                    text: "Continue with Google",
+                    isGoogle: true,
+                    onPressed: () {
+                      continueWithGoogle().then((value) {
+                        print(value.user!.displayName);
+                      }).catchError((e) {
+                        setState(() => errorMessage =
+                            'Google sign-in failed. Please try again.');
+                      });
+                    },
+                  ),
+                ],
               ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  continueWithGoogle().then((value) {
-                    print(value.user!.displayName);
-                  }).catchError((e) {
-                    print(e);
-                  });
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF9FB8C4),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                ),
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Expanded(
-                        child: Center(
-                          child: Text(
-                            "Continue with Google",
-                            style: GoogleFonts.poppins(
-                              color: const Color(0xFF104D6C),
-                              fontSize: 30,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                      SizedBox(
-                        width: 60.0, // Set the desired width
-                        height: 60.0, // Set the desired height
-                        child: Image.asset("assets/google.png"),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+    bool isPassword = false,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: TextField(
+        controller: controller,
+        obscureText: isPassword,
+        style: GoogleFonts.poppins(
+          fontSize: 16,
+          color: Colors.black87,
+        ),
+        decoration: InputDecoration(
+          hintText: hint,
+          prefixIcon: Icon(icon, color: const Color(0xFF1976D2)),
+          border: InputBorder.none,
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildButton({
+    required String text,
+    IconData? icon,
+    required VoidCallback onPressed,
+    bool isGoogle = false,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.white,
+          foregroundColor: const Color(0xFF1976D2),
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (isGoogle)
+              Image.asset("assets/google.png", height: 24, width: 24)
+            else
+              Icon(icon, size: 24),
+            const SizedBox(width: 12),
+            Text(
+              text,
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
       ),
     );

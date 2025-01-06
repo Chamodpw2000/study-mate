@@ -127,7 +127,7 @@ class _AllNotesState extends State<AllNotes> {
         style: GoogleFonts.poppins(
           fontSize: 24,
           fontWeight: FontWeight.bold,
-          color: Colors.black,
+          color: const Color.fromARGB(255, 255, 255, 255),
         ),
       ),
       leading: IconButton(
@@ -301,7 +301,7 @@ class _AllNotesState extends State<AllNotes> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => Viewnote(note: note),
+        builder: (context) => ViewNote(note: note),
       ),
     ).then((result) {
       if (result == true) fetchNotes();
