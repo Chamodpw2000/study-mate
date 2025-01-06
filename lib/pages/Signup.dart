@@ -8,32 +8,31 @@ class Signup extends StatelessWidget {
   const Signup({super.key});
 
   Future<UserCredential> continueWithGoogle() async {
-    await GoogleSignIn().signOut();
-    final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+    try {
+      await GoogleSignIn().signOut();
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
 
-    if (googleUser == null) {
-      return Future.error("Google sign-in canceled");
-    }
+      if (googleUser == null) {
+        return Future.error("Google sign-in canceled");
+      }
 
-    final GoogleSignInAuthentication googleAuth =
-        await googleUser.authentication;
-    final AuthCredential credential = GoogleAuthProvider.credential(
-      idToken: googleAuth.idToken,
-      accessToken: googleAuth.accessToken,
-    );
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        idToken: googleAuth.idToken,
+        accessToken: googleAuth.accessToken,
+      );
 
-      // Sign in to Firebase with the credential and return the UserCredential
       final UserCredential userCredential =
           await FirebaseAuth.instance.signInWithCredential(credential);
 
-      final User? user = userCredential.user; // Get the signed-in user
-
+      final User? user = userCredential.user;
       print("User's email: ${user?.email}");
 
       return userCredential;
     } catch (e) {
       print("Error: $e");
-      return Future.error(e); 
+      return Future.error(e);
     }
   }
 
@@ -42,11 +41,11 @@ class Signup extends StatelessWidget {
     return Container(
       decoration: const BoxDecoration(
         image: DecorationImage(
-            image: AssetImage(''),
-            fit: BoxFit.cover,
-            alignment: Alignment(-0.21, 0),
-            opacity: 0.7 //
-            ),
+          image: AssetImage(''),
+          fit: BoxFit.cover,
+          alignment: Alignment(-0.21, 0),
+          opacity: 0.7,
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(12.0),
@@ -54,8 +53,8 @@ class Signup extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             SizedBox(
-              width: 160.0, // Set the desired width
-              height: 160.0, // Set the desired height
+              width: 160.0,
+              height: 160.0,
               child: Image.asset("assets/account.png"),
             ),
             SizedBox(height: 50),
@@ -83,7 +82,7 @@ class Signup extends StatelessWidget {
                         child: Text(
                           "Sign Up With Email and Password",
                           style: GoogleFonts.poppins(
-                            color:const Color(0xFF104D6C),
+                            color: const Color(0xFF104D6C),
                             fontSize: 30,
                             fontWeight: FontWeight.bold,
                           ),
@@ -91,8 +90,8 @@ class Signup extends StatelessWidget {
                       ),
                     ),
                     SizedBox(
-                      width: 60.0, // Set the desired width
-                      height: 60.0, // Set the desired height
+                      width: 60.0,
+                      height: 60.0,
                       child: Image.asset("assets/email.png"),
                     ),
                   ],
@@ -133,8 +132,8 @@ class Signup extends StatelessWidget {
                       ),
                     ),
                     SizedBox(
-                      width: 60.0, // Set the desired width
-                      height: 60.0, // Set the desired height
+                      width: 60.0,
+                      height: 60.0,
                       child: Image.asset("assets/google.png"),
                     ),
                   ],

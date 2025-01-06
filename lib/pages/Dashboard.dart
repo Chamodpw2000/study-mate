@@ -3,10 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:studymate/pages/Friends.dart';
-import 'package:studymate/pages/Lessons.dart';
 import 'package:studymate/pages/Notes.dart';
 import 'package:studymate/pages/Profile.dart';
-import 'package:studymate/pages/Signin.dart';
 import 'package:studymate/screens/home_page.dart';
 
 void main() {
@@ -17,7 +15,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const MaterialApp(
-      home: Dashboard(), // Your Dashboard widget
+      home: Dashboard(),
     );
   }
 }
@@ -25,11 +23,9 @@ class MyApp extends StatelessWidget {
 TextEditingController fnamec = TextEditingController();
 TextEditingController lnamec = TextEditingController();
 bool userDetails = false;
-
-bool loading = true; // Loading state
+bool loading = true;
 User? user = FirebaseAuth.instance.currentUser;
-
-Map<String, dynamic>? userData; // Variable to store user details
+Map<String, dynamic>? userData;
 
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
@@ -40,6 +36,7 @@ class Dashboard extends StatefulWidget {
 
 class _DashboardState extends State<Dashboard> {
   final user = FirebaseAuth.instance.currentUser;
+
   Future<void> fetchUserDetails() async {
     if (user != null) {
       try {
@@ -51,21 +48,30 @@ class _DashboardState extends State<Dashboard> {
         if (querySnapshot.docs.isNotEmpty) {
           DocumentSnapshot userDoc = querySnapshot.docs.first;
           setState(() {
-            userData = userDoc.data()
-                as Map<String, dynamic>?; // Store user data in userData variabe
+            userData = userDoc.data() as Map<String, dynamic>?;
           });
         }
         setState(() {
           userDetails = querySnapshot.docs.isNotEmpty;
-          loading = false; // Stop loading indicator
+          loading = false;
         });
       } catch (e) {
         setState(() {
-          loading = false; // Stop loading indicator in case of an error
+          loading = false;
         });
         print('Error fetching user details: $e');
       }
     }
+  }
+
+  Future<void> addDetails() async {
+    await FirebaseFirestore.instance.collection("users").add({
+      "email": user!.email,
+      "fname": fnamec.text,
+      "lname": lnamec.text,
+    });
+    setState(() => userDetails = true);
+    fetchUserDetails();
   }
 
   @override
@@ -82,11 +88,7 @@ class _DashboardState extends State<Dashboard> {
             IconButton(
               icon: const Icon(Icons.logout),
               onPressed: () async {
-                // Sign out the user
                 await FirebaseAuth.instance.signOut();
-
-                // Navigate back to the home or login screen
-                // Navigator.of(context).pushReplacementNamed('/home');
               },
             ),
           ],
@@ -121,18 +123,6 @@ class _DashboardState extends State<Dashboard> {
                               textAlign: TextAlign.center,
                             ),
                             SizedBox(height: 20),
-                            // Text(
-                            //   '${userData!['fname']} ${userData!['lname']} !',
-                            //   style: GoogleFonts.poppins(
-                            //     fontSize: 40,
-                            //     fontWeight: FontWeight.bold,
-                            //     color: Colors.black,
-                            //   ),
-                            //   textAlign: TextAlign.center,
-                            // ),
-                            // SizedBox(
-                            //   height: 20,
-                            // ),
                             ElevatedButton(
                               onPressed: () {
                                 Navigator.push(
@@ -470,29 +460,5 @@ class _DashboardState extends State<Dashboard> {
                       ),
                     ),
                   ));
-  }
-
-  Future<void> addDetails() async {
-    await FirebaseFirestore.instance.collection("users").add({
-      "email": user!.email,
-      "fname": fnamec.text,
-      "lname": lnamec.text,
-    }).then((value) {
-      fnamec.clear();
-      lnamec.clear();
-      setState(() {
-        userDetails = true;
-      });
-    });
-  }
-
-  Future<void> addDetails() async {
-    await FirebaseFirestore.instance.collection("users").add({
-      "email": user!.email,
-      "fname": fnamec.text,
-      "lname": lnamec.text,
-    });
-    setState(() => userDetails = true);
-    fetchUserDetails();
   }
 }
