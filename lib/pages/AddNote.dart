@@ -1,5 +1,6 @@
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -17,6 +18,18 @@ TextEditingController subjectController = TextEditingController();
 String _selectedVisibility = 'Public'; // Default selected option
 
 class _AddnoteState extends State<Addnote> {
+  FilePickerResult? _filePickerResult;
+
+  void _openFilePicker() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+        allowMultiple: false,
+        allowedExtensions: ["pdf"],
+        type: FileType.custom);
+    setState(() {
+      _filePickerResult = result;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -174,8 +187,7 @@ class _AddnoteState extends State<Addnote> {
                 ),
                 ElevatedButton(
                   onPressed: () async {
-                    print("Pressed");
-                    // Your existing functionality here
+                    _openFilePicker();
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.black,
@@ -191,7 +203,7 @@ class _AddnoteState extends State<Addnote> {
                       children: [
                         Expanded(
                             child: Center(
-                                child: Text("Upload PDF",
+                                child: Text("Upload PDFF",
                                     style: GoogleFonts.poppins(
                                       color: Colors.white,
                                       fontSize: 30,
