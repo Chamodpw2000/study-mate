@@ -4,57 +4,78 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class Myfriends extends StatefulWidget {
-  const Myfriends({super.key});
+class MyFriends extends StatefulWidget {
+  const MyFriends({super.key});
 
   @override
-  State<Myfriends> createState() => _MyfriendsState();
+  State<MyFriends> createState() => _MyFriendsState();
 }
 
-class _MyfriendsState extends State<Myfriends> {
+class _MyFriendsState extends State<MyFriends>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  final TextEditingController searchController = TextEditingController();
   List<Map<String, dynamic>> users = [];
   List<Map<String, dynamic>> filteredUsers = [];
-  TextEditingController searchController = TextEditingController();
   bool isLoading = true;
+  User? currentUser = FirebaseAuth.instance.currentUser;
+  Map<String, dynamic>? userData;
 
   @override
   void initState() {
     super.initState();
-    fetchFriends();
-
-    fetchUserDetails();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _initializeData();
   }
 
-  User? currentUser = FirebaseAuth.instance.currentUser;
-  Map<String, dynamic>? userData; // Variable to store user details
+  Future<void> _initializeData() async {
+    await Future.wait([
+      fetchFriends(),
+      fetchUserDetails(),
+    ]);
+  }
+
+  Future<void> fetchUserDetails() async {
+    if (currentUser != null) {
+      try {
+        QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .where('email', isEqualTo: currentUser!.email)
+            .get();
+
+        if (querySnapshot.docs.isNotEmpty) {
+          setState(() {
+            userData = querySnapshot.docs.first.data() as Map<String, dynamic>?;
+            isLoading = false;
+          });
+        } else {
+          setState(() => isLoading = false);
+        }
+      } catch (e) {
+        setState(() => isLoading = false);
+        _showErrorSnackBar('Error fetching user details');
+      }
+    }
+  }
 
   Future<void> fetchFriends() async {
-    setState(() {
-      isLoading = true;
-    });
-
     try {
-      User? currentUser = FirebaseAuth.instance.currentUser;
-
       if (currentUser != null) {
-        String currentUserEmail = currentUser.email!;
-
-        // Fetch the current user's document by email
+        String currentUserEmail = currentUser!.email!;
         QuerySnapshot currentUserQuery = await FirebaseFirestore.instance
             .collection('users')
             .where('email', isEqualTo: currentUserEmail)
             .get();
 
-        // Ensure the user document exists
         if (currentUserQuery.docs.isNotEmpty) {
           DocumentSnapshot currentUserDoc = currentUserQuery.docs.first;
-
-          // Retrieve the friends array, default to an empty list if not available
           List<dynamic> friends =
               (currentUserDoc.data() as Map<String, dynamic>)['friends'] ?? [];
 
           if (friends.isNotEmpty) {
-            // Fetch users whose email is in the friends array
             QuerySnapshot friendsQuery = await FirebaseFirestore.instance
                 .collection('users')
                 .where('email', whereIn: friends)
@@ -69,297 +90,320 @@ class _MyfriendsState extends State<Myfriends> {
                   'email': doc['email'] ?? '',
                 };
               }).toList();
-              isLoading = false;
-            });
-          } else {
-            print("No friends found in the current user's friends array.");
-            setState(() {
-              users = [];
-              isLoading = false;
             });
           }
-        } else {
-          print("Current user document not found.");
-          setState(() {
-            isLoading = false;
-          });
         }
-      } else {
-        print("No user is logged in.");
-        setState(() {
-          isLoading = false;
-        });
       }
     } catch (e) {
-      print('Error fetching friends: $e');
-      setState(() {
-        isLoading = false;
-      });
-    }
-  }
-
-  Future<void> fetchUserDetails() async {
-    if (currentUser != null) {
-      try {
-        // Fetch user document from Firestore where the document ID matches the user's UID
-        QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-            .collection('users')
-            .where('email', isEqualTo: currentUser!.email)
-            .get();
-
-        if (querySnapshot.docs.isNotEmpty) {
-          DocumentSnapshot userDoc = querySnapshot.docs.first;
-
-          setState(() {
-            userData = userDoc.data() as Map<String,
-                dynamic>?; // Store user data in userData variable
-
-            isLoading = false; // Stop loading once data is fetched
-          });
-        } else {
-          print('User document does not exist');
-          setState(() {
-            isLoading = false; // Stop loading if user document is not found
-          });
-        }
-      } catch (e) {
-        print('Error fetching user details: $e');
-        setState(() {
-          isLoading = false; // Stop loading on error
-        });
-      }
+      _showErrorSnackBar('Error fetching friends');
+    } finally {
+      setState(() => isLoading = false);
     }
   }
 
   void filterUsers(String query) {
     final lowerQuery = query.toLowerCase();
-
     setState(() {
       filteredUsers = users.where((user) {
         final fullName =
             "${user['fname']} ${user['lname']}".toLowerCase().trim();
         final email = (user['email'] ?? '').toLowerCase();
-
         return fullName.contains(lowerQuery) || email.contains(lowerQuery);
       }).toList();
     });
   }
 
+  Future<void> removeFriend(Map<String, dynamic> user) async {
+    try {
+      String currentUserEmail = currentUser!.email!;
+
+      // Remove from current user's friends list
+      var currentUserQuery = await FirebaseFirestore.instance
+          .collection('users')
+          .where('email', isEqualTo: currentUserEmail)
+          .get();
+
+      if (currentUserQuery.docs.isNotEmpty) {
+        DocumentSnapshot currentUserDoc = currentUserQuery.docs.first;
+        List<dynamic> currentUserFriends =
+            (currentUserDoc.data() as Map<String, dynamic>)['friends'] ?? [];
+        currentUserFriends.remove(user['email']);
+        await currentUserDoc.reference.update({'friends': currentUserFriends});
+      }
+
+      // Remove from friend's friends list
+      var friendQuery = await FirebaseFirestore.instance
+          .collection('users')
+          .where('email', isEqualTo: user['email'])
+          .get();
+
+      if (friendQuery.docs.isNotEmpty) {
+        DocumentSnapshot friendDoc = friendQuery.docs.first;
+        List<dynamic> friendFriends =
+            (friendDoc.data() as Map<String, dynamic>)['friends'] ?? [];
+        friendFriends.remove(currentUserEmail);
+        await friendDoc.reference.update({'friends': friendFriends});
+      }
+
+      setState(() {
+        users.removeWhere((u) => u['email'] == user['email']);
+        filteredUsers.removeWhere((u) => u['email'] == user['email']);
+      });
+
+      _showSuccessSnackBar('Friend removed successfully');
+    } catch (e) {
+      _showErrorSnackBar('Error removing friend');
+    }
+  }
+
+  void _showSuccessSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'My Friends',
-          style: GoogleFonts.poppins(
-            color: Colors.black,
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
+    return Theme(
+      data: ThemeData(
+        primaryColor: const Color(0xFF1976D2),
+        colorScheme: ColorScheme.fromSwatch().copyWith(
+          secondary: const Color(0xFF64B5F6),
         ),
-        centerTitle: true, // Centers the title text
-        backgroundColor: Colors.white,
-        iconTheme: const IconThemeData(color: Colors.black),
       ),
-      body: Container(
-        width: double.infinity,
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/b.jpg'),
-            fit: BoxFit.cover,
-            alignment: Alignment(-0.21, 0),
-            opacity: 0.7,
+      child: Scaffold(
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF90CAF9),
+                Color(0xFF64B5F6),
+                Color(0xFF42A5F5),
+                Color(0xFF2196F3),
+              ],
+            ),
           ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(18.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (isLoading)
-                const Center(child: CircularProgressIndicator())
-              else
-                Expanded(
-                  child: Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(top: 0),
-                        child: TextField(
-                          controller: searchController,
-                          onChanged: filterUsers,
-                          decoration: InputDecoration(
-                            labelText: 'Search Friends',
-                            labelStyle: GoogleFonts.poppins(
-                              color: Colors.black,
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            prefixIcon: const Icon(Icons.search),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8.0),
-                              borderSide: const BorderSide(color: Colors.black),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8.0),
-                              borderSide: const BorderSide(color: Colors.black),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8.0),
-                              borderSide: const BorderSide(
-                                  color: Colors.black, width: 2),
-                            ),
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: searchController.text.isNotEmpty
-                            ? (filteredUsers.isEmpty
-                                ? const Center(
-                                    child: Text("No Matching Friends"),
-                                  )
-                                : buildContactList(filteredUsers))
-                            : (users.isEmpty
-                                ? const Center(child: Text("No Friends Yet"))
-                                : buildContactList(users)),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
+          child: SafeArea(
+            child: Column(
+              children: [
+                _buildAppBar(),
+                Expanded(child: _buildBody()),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
-}
 
-Widget buildContactList(List<Map<String, dynamic>> userList) {
-  return ListView.builder(
-    itemCount: userList.length,
-    itemBuilder: (context, index) {
-      final user = userList[index];
-
-      return ListTile(
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildAppBar() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          Row(
             children: [
-              Text(
-                "${user['fname']} ${user['lname']}".trim(),
-                style: GoogleFonts.poppins(
-                  color: Colors.black,
-                  fontSize: 17,
-                  fontWeight: FontWeight.bold,
+              IconButton(
+                icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+                onPressed: () => Navigator.pop(context),
+              ),
+              Expanded(
+                child: Text(
+                  'My Friends',
+                  style: GoogleFonts.poppins(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
               ),
-              Text(
-                user['email'] ?? '',
-                style: GoogleFonts.poppins(
-                  color: Colors.black,
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
+              CircleAvatar(
+                backgroundColor: Colors.white,
+                child: Text(
+                  userData?['fname']?.substring(0, 1).toUpperCase() ?? 'U',
+                  style: GoogleFonts.poppins(
+                    color: const Color(0xFF1976D2),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],
           ),
-          leading: CircleAvatar(
-            backgroundColor: Colors.black,
+          const SizedBox(height: 16),
+          _buildSearchBar(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: searchController,
+        onChanged: filterUsers,
+        decoration: InputDecoration(
+          hintText: 'Search friends...',
+          hintStyle: GoogleFonts.poppins(color: Colors.grey),
+          prefixIcon: const Icon(Icons.search, color: Color(0xFF1976D2)),
+          border: InputBorder.none,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    if (isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(color: Colors.white),
+      );
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(top: 16),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+      ),
+      child: ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+        child: _buildFriendsList(),
+      ),
+    );
+  }
+
+  Widget _buildFriendsList() {
+    final displayUsers =
+        searchController.text.isNotEmpty ? filteredUsers : users;
+
+    if (displayUsers.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.people_outline, size: 64, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(
+              searchController.text.isNotEmpty
+                  ? 'No matching friends found'
+                  : 'No friends yet',
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: displayUsers.length,
+      itemBuilder: (context, index) => _buildFriendTile(displayUsers[index]),
+    );
+  }
+
+  Widget _buildFriendTile(Map<String, dynamic> user) {
+    final initials = (user['fname']?.substring(0, 1) ?? '') +
+        (user['lname']?.substring(0, 1) ?? '');
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.all(12),
+        leading: Hero(
+          tag: user['email'] ?? '',
+          child: CircleAvatar(
+            radius: 25,
+            backgroundColor: const Color(0xFF1976D2),
             child: Text(
-              (user['fname']?.substring(0, 1) ?? '') +
-                  (user['lname']?.substring(0, 1) ?? ''),
+              initials,
               style: GoogleFonts.poppins(
                 color: Colors.white,
-                fontSize: 17,
                 fontWeight: FontWeight.bold,
+                fontSize: 18,
               ),
             ),
           ),
-          trailing: GestureDetector(
-            child: const Icon(Icons.highlight_remove_sharp),
-            onTap: () {
-              AwesomeDialog(
-                context: context,
-                dialogType: DialogType.question,
-                animType: AnimType.scale,
-                title: 'Remove Friend?',
-                desc:
-                    'Are you sure you want to remove this person as a friend?',
-                btnCancelOnPress: () {},
-                btnOkOnPress: () {
-// Get the current user's email
-                  String currentUserEmail =
-                      FirebaseAuth.instance.currentUser!.email!;
+        ),
+        title: Text(
+          "${user['fname']} ${user['lname']}".trim(),
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
+        ),
+        subtitle: Text(
+          user['email'] ?? '',
+          style: GoogleFonts.poppins(
+            fontSize: 13,
+            color: Colors.grey[600],
+          ),
+        ),
+        trailing: IconButton(
+          icon: const Icon(Icons.person_remove_rounded, color: Colors.red),
+          onPressed: () => _showRemoveFriendDialog(user),
+        ),
+      ),
+    );
+  }
 
-                  // Get the current user's document
-                  FirebaseFirestore.instance
-                      .collection('users')
-                      .where('email', isEqualTo: currentUserEmail)
-                      .get()
-                      .then((querySnapshot) {
-                    if (querySnapshot.docs.isNotEmpty) {
-                      DocumentSnapshot currentUserDoc =
-                          querySnapshot.docs.first;
+  void _showRemoveFriendDialog(Map<String, dynamic> user) {
+    AwesomeDialog(
+      context: context,
+      dialogType: DialogType.warning,
+      animType: AnimType.scale,
+      title: 'Remove Friend',
+      desc:
+          'Are you sure you want to remove ${user['fname']} from your friends list?',
+      btnCancelOnPress: () {},
+      btnOkOnPress: () => removeFriend(user),
+    ).show();
+  }
 
-                      // Get the current user's friends array
-                      List<dynamic> friends = (currentUserDoc.data()
-                              as Map<String, dynamic>)['friends'] ??
-                          [];
-
-                      // Remove the friend's email from the friends array
-                      friends.remove(user['email']);
-
-                      // Update the current user's friends array
-                      currentUserDoc.reference
-                          .update({'friends': friends}).then((value) {
-                        AwesomeDialog(
-                          context: context,
-                          dialogType: DialogType.success,
-                          animType: AnimType.bottomSlide,
-                          title: 'Friend Removed',
-                          desc:
-                              'You have successfully removed ${user['fname']} ${user['lname']} as a friend.',
-                          btnCancelOnPress: () {},
-                          btnOkOnPress: () {},
-                        ).show();
-                      }).catchError((error) {
-                        AwesomeDialog(
-                          context: context,
-                          dialogType: DialogType.error,
-                          animType: AnimType.bottomSlide,
-                          title: 'Error',
-                          desc:
-                              'An error occurred while removing the friend. Please try again.',
-                          btnCancelOnPress: () {},
-                          btnOkOnPress: () {},
-                        ).show();
-                      });
-                    } else {
-                      AwesomeDialog(
-                        context: context,
-                        dialogType: DialogType.error,
-                        animType: AnimType.bottomSlide,
-                        title: 'Error',
-                        desc:
-                            'An error occurred while removing the friend. Please try again.',
-                        btnCancelOnPress: () {},
-                        btnOkOnPress: () {},
-                      ).show();
-                    }
-                  }).catchError((error) {
-                    AwesomeDialog(
-                      context: context,
-                      dialogType: DialogType.error,
-                      animType: AnimType.bottomSlide,
-                      title: 'Error',
-                      desc:
-                          'An error occurred while removing the friend. Please try again.',
-                      btnCancelOnPress: () {},
-                      btnOkOnPress: () {},
-                    ).show();
-                  });
-                },
-              ).show();
-            },
-          ));
-    },
-  );
+  @override
+  void dispose() {
+    _animationController.dispose();
+    searchController.dispose();
+    super.dispose();
+  }
 }
