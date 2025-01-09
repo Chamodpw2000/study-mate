@@ -1,9 +1,11 @@
+import 'dart:math';
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:studymate/services/cloudinary_service.dart';
 
 class Addnote extends StatefulWidget {
   const Addnote({super.key});
@@ -13,85 +15,99 @@ class Addnote extends StatefulWidget {
 }
 
 class _AddnoteState extends State<Addnote> {
+  FilePickerResult? _filePickerResult;
+  String? uploadedFileName;
+  bool isLoading = false;
+
+  void _openFilePicker() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+        allowMultiple: false,
+        allowedExtensions: ["pdf", "jpeg", "jpg", "png", "mp4"],
+        type: FileType.custom);
+
+    setState(() {
+      _filePickerResult = result;
+      uploadedFileName = result?.files.first.name;
+    });
+
+    _showSuccessNotification(_filePickerResult?.files.first.name ?? '');
+  }
+
   final TextEditingController titleController = TextEditingController();
   final TextEditingController contentController = TextEditingController();
   final TextEditingController subjectController = TextEditingController();
   String _selectedVisibility = 'Public';
-  FilePickerResult? _filePickerResult;
-
-  void _openFilePicker() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      allowMultiple: false,
-      allowedExtensions: ["pdf"],
-      type: FileType.custom,
-    );
-    setState(() {
-      _filePickerResult = result;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
       decoration: const BoxDecoration(
-        image: DecorationImage(
-          image: AssetImage('assets/b.jpg'),
-          fit: BoxFit.cover,
-          alignment: Alignment(-0.21, 0),
-          opacity: 0.7,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF90CAF9),
+            Color(0xFF64B5F6),
+            Color(0xFF42A5F5),
+            Color(0xFF2196F3),
+          ],
         ),
       ),
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          centerTitle: true,
-          backgroundColor: Colors.white,
-          title: Text(
-            'Add Note',
-            style: GoogleFonts.poppins(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
-            onPressed: () => Navigator.pop(context),
-          ),
+        appBar: _buildAppBar(),
+        body: _buildBody(),
+      ),
+    );
+  }
+
+  AppBar _buildAppBar() {
+    return AppBar(
+      elevation: 0,
+      backgroundColor: Colors.transparent,
+      title: Text(
+        'Add Note',
+        style: GoogleFonts.poppins(
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
         ),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildInputField(
-                controller: titleController,
-                hint: "Title",
-                maxLines: 1,
-              ),
-              const SizedBox(height: 16),
-              _buildInputField(
-                controller: subjectController,
-                hint: "Subject",
-                maxLines: 1,
-              ),
-              const SizedBox(height: 16),
-              _buildInputField(
-                controller: contentController,
-                hint: "Add Note Content",
-                maxLines: 10,
-                minLines: 5,
-              ),
-              const SizedBox(height: 20),
-              _buildVisibilitySection(),
-              const SizedBox(height: 20),
-              _buildUploadButton(),
-              const SizedBox(height: 20),
-              _buildAddNoteButton(),
-              const SizedBox(height: 50),
-            ],
+      ),
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+        onPressed: () => Navigator.pop(context),
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildInputField(
+            controller: titleController,
+            hint: "Title",
+            maxLines: 1,
           ),
-        ),
+          const SizedBox(height: 16),
+          _buildInputField(
+            controller: subjectController,
+            hint: "Subject",
+            maxLines: 1,
+          ),
+          const SizedBox(height: 16),
+          _buildInputField(
+            controller: contentController,
+            hint: "Note Content",
+            maxLines: 8,
+          ),
+          const SizedBox(height: 24),
+          _buildVisibilitySection(),
+          const SizedBox(height: 24),
+          _buildActionButtons(),
+        ],
       ),
     );
   }
@@ -100,77 +116,110 @@ class _AddnoteState extends State<Addnote> {
     required TextEditingController controller,
     required String hint,
     required int maxLines,
-    int? minLines,
   }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.9),
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
       child: TextField(
         controller: controller,
         maxLines: maxLines,
-        minLines: minLines,
+        style: GoogleFonts.poppins(fontSize: 16),
         decoration: InputDecoration(
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(20.0),
-          ),
           hintText: hint,
-          hintStyle: GoogleFonts.poppins(
-            color: Colors.black.withOpacity(0.7),
-            fontSize: 20.0,
-            fontWeight: FontWeight.bold,
+          hintStyle: GoogleFonts.poppins(color: Colors.black54),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(15),
+            borderSide: BorderSide.none,
           ),
-          fillColor: Colors.white,
-          filled: true,
+          contentPadding: const EdgeInsets.all(20),
         ),
       ),
     );
   }
 
   Widget _buildVisibilitySection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "Visibility",
-          style: GoogleFonts.poppins(
-            fontSize: 20.0,
-            fontWeight: FontWeight.bold,
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.9),
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Visibility",
+            style: GoogleFonts.poppins(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        ),
-        _buildVisibilityOption('Public'),
-        _buildVisibilityOption('Private'),
-        _buildVisibilityOption('Friends Only'),
-      ],
-    );
-  }
-
-  Widget _buildVisibilityOption(String value) {
-    return ListTile(
-      title: Text(value, style: GoogleFonts.poppins()),
-      leading: Radio<String>(
-        value: value,
-        groupValue: _selectedVisibility,
-        onChanged: (value) => setState(() => _selectedVisibility = value!),
+          _buildVisibilityOption('Public', Icons.public),
+          _buildVisibilityOption('Private', Icons.lock),
+          _buildVisibilityOption('Friends Only', Icons.group),
+        ],
       ),
     );
   }
 
-  Widget _buildUploadButton() {
-    return _buildStyledButton(
-      label: "Upload PDF",
-      icon: Icons.picture_as_pdf,
-      onPressed: _openFilePicker,
+  Widget _buildVisibilityOption(String value, IconData icon) {
+    return ListTile(
+      leading: Icon(icon, color: const Color(0xFF1976D2)),
+      title: Text(
+        value,
+        style: GoogleFonts.poppins(),
+      ),
+      trailing: Radio<String>(
+        value: value,
+        groupValue: _selectedVisibility,
+        onChanged: (newValue) =>
+            setState(() => _selectedVisibility = newValue!),
+        activeColor: const Color(0xFF1976D2),
+      ),
     );
   }
 
-  Widget _buildAddNoteButton() {
-    return _buildStyledButton(
-      label: "Add Note",
-      icon: Icons.arrow_forward,
-      onPressed: _saveNote,
+  Widget _buildActionButtons() {
+    return Column(
+      children: [
+        _buildButton(
+          label: "Upload PDF",
+          icon: Icons.picture_as_pdf,
+          onPressed: _openFilePicker,
+        ),
+        if (uploadedFileName != null)
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Text(
+              'Uploaded: $uploadedFileName',
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        const SizedBox(height: 16),
+        isLoading
+            ? const CircularProgressIndicator(color: Colors.white)
+            : _buildButton(
+                label: "Add Note",
+                icon: Icons.check,
+                onPressed: _saveNote,
+              ),
+      ],
     );
   }
 
-  Widget _buildStyledButton({
+  Widget _buildButton({
     required String label,
     required IconData icon,
     required VoidCallback onPressed,
@@ -178,51 +227,41 @@ class _AddnoteState extends State<Addnote> {
     return ElevatedButton(
       onPressed: onPressed,
       style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.black,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(30),
-        ),
+        backgroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Expanded(
-              child: Center(
-                child: Text(
-                  label,
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontSize: 30,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.poppins(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF1976D2),
             ),
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.grey[200],
-                shape: BoxShape.circle,
-              ),
-              padding: const EdgeInsets.all(8.0),
-              child: Icon(icon, color: Colors.black, size: 30),
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(width: 12),
+          Icon(icon, color: const Color(0xFF1976D2)),
+        ],
       ),
     );
   }
 
   void _saveNote() async {
     try {
-      String title = titleController.text.trim();
-      String subject = subjectController.text.trim();
-      String content = contentController.text.trim();
-      User? user = FirebaseAuth.instance.currentUser;
+      setState(() {
+        isLoading = true;
+      });
+
+      final title = titleController.text.trim();
+      final subject = subjectController.text.trim();
+      final content = contentController.text.trim();
+      final user = FirebaseAuth.instance.currentUser;
 
       if (title.isEmpty || subject.isEmpty || content.isEmpty) {
-        _showErrorDialog('Please fill all the fields');
+        _showErrorDialog('Please fill all fields');
         return;
       }
 
@@ -231,6 +270,8 @@ class _AddnoteState extends State<Addnote> {
         return;
       }
 
+      final response = await uploadToCloudinary(_filePickerResult);
+
       await FirebaseFirestore.instance.collection('notes').add({
         'title': title,
         'subject': subject,
@@ -238,28 +279,65 @@ class _AddnoteState extends State<Addnote> {
         'visibility': _selectedVisibility,
         'addedBy': user.email,
         'createdAt': FieldValue.serverTimestamp(),
+        'pdfUrl': response['secure_url'],
+        'fileName': _filePickerResult?.files.first.name,
+        'publicId': response['public_id']
       });
 
       _showSuccessDialog();
+      _clearFields();
     } catch (e) {
       _showErrorDialog('Error saving note: $e');
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
     }
   }
 
-  void _showSuccessDialog() {
+   void _showSuccessDialog() {
     AwesomeDialog(
       context: context,
       dialogType: DialogType.success,
       animType: AnimType.scale,
       title: 'Success',
       desc: 'Note Added Successfully',
-      btnOkOnPress: () {
-        _clearFields();
-        Navigator.pop(context);
-      },
+      btnOkColor: const Color(0xFF1976D2),
+      btnOkOnPress: () => Navigator.pop(context),
     ).show();
   }
 
+
+  void _showSuccessNotification(String fileName) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.white),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                '$fileName uploaded successfully!',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: Colors.white,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.green,
+        duration: Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+      ),
+    );
+  }
+
+ 
   void _showErrorDialog(String message) {
     AwesomeDialog(
       context: context,
@@ -267,6 +345,7 @@ class _AddnoteState extends State<Addnote> {
       animType: AnimType.scale,
       title: 'Error',
       desc: message,
+      btnOkColor: const Color(0xFF1976D2),
       btnOkOnPress: () {},
     ).show();
   }
@@ -275,5 +354,8 @@ class _AddnoteState extends State<Addnote> {
     titleController.clear();
     subjectController.clear();
     contentController.clear();
+    setState(() {
+      uploadedFileName = null;
+    });
   }
 }

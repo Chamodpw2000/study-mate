@@ -55,6 +55,8 @@ class _AllNotesState extends State<AllNotes> {
                       'content': doc['content'],
                       'addedBy': doc['addedBy'],
                       'visibility': doc['visibility'],
+                      'pdfUrl': doc['pdfUrl'],
+                      'fileName': doc['fileName'],
                     })
                 .where((note) =>
                     note['visibility'] == 'Public' ||

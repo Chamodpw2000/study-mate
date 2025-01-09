@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:studymate/pages/AddNote.dart';
 import 'package:studymate/pages/EditNote.dart';
+import 'package:studymate/services/cloudinary_service.dart';
 
 class MyNotes extends StatefulWidget {
   const MyNotes({super.key});
@@ -47,6 +48,7 @@ class _MyNotesState extends State<MyNotes> {
                     'content': doc['content'],
                     'addedBy': doc['addedBy'],
                     'visibility': doc['visibility'],
+                    'publicId': doc['publicId']
                   })
               .toList();
           isLoading = false;
@@ -316,6 +318,12 @@ class _MyNotesState extends State<MyNotes> {
       desc: 'Are you sure you want to delete this note?',
       btnCancelOnPress: () {},
       btnOkOnPress: () {
+        print('===================================================');
+        print(note['publicId']);
+        print('===================================================');
+
+        deleteFromCloudinary(note['publicId']);
+
         FirebaseFirestore.instance
             .collection('notes')
             .doc(note['id'])

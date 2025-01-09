@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:studymate/services/cloudinary_service.dart';
 
 class ViewNote extends StatefulWidget {
   final Map<String, dynamic> note;
@@ -39,6 +40,32 @@ class _ViewNoteState extends State<ViewNote> {
         backgroundColor: Colors.transparent,
         appBar: _buildAppBar(),
         body: _buildBody(),
+      ),
+    );
+  }
+
+  void _showSuccessNotification() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.white),
+            SizedBox(width: 8),
+            Text(
+              'File downloaded successfully!',
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.green,
+        duration: Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
       ),
     );
   }
@@ -183,8 +210,9 @@ class _ViewNoteState extends State<ViewNote> {
         _buildActionButton(
           title: 'Download PDF',
           icon: Icons.download,
-          onPressed: () {
-            // PDF download functionality
+          onPressed: () async {
+            await downloadFileFromCloudinary(
+                widget.note['pdfUrl'], widget.note['fileName'], context);
           },
         ),
       ],
