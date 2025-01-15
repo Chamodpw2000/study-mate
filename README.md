@@ -1,51 +1,16 @@
-# StudyMate - Social Learning Platform
+# studymate
 
-StudyMate is a modern educational platform that combines collaborative learning with social networking features, enabling students to share academic resources and connect with peers.
+A new Flutter project.
 
-## 🚀 Key Features
+## Getting Started
 
-### Authentication & Security
-- Secure email-based registration with mandatory verification
-- Multi-authentication options:
-  - Email and password login
-  - Google OAuth integration
-- Protected user sessions and data privacy
+This project is a starting point for a Flutter application.
 
-### Social Networking
-- Advanced user discovery system
-- Friend request management
-- Real-time friend status updates
-- Comprehensive user profiles
+A few resources to get you started if this is your first Flutter project:
 
-### Note Sharing System
-- PDF document sharing with rich metadata
-- Customizable visibility settings:
-  - Public - accessible to all users
-  - Friends-only - exclusive to connected peers
-  - Private - personal access only
-- Dynamic content management:
-  - Editable titles and descriptions
-  - Adjustable visibility settings
-  - PDF file management
-- Organized note categorization
+- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
+- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
 
-### Communication
-- Real-time chat functionality
-- One-on-one messaging with friends
-- Message status indicators
-- Chat history management
-
-## 💡 Purpose
-
-StudyMate aims to create an integrated learning environment where students can:
-- Build meaningful academic connections
-- Share and access quality study materials
-- Engage in educational discussions
-- Collaborate effectively with peers
-
-## 🔧 Technical Stack
-- Frontend:Dart + Flutter
-- Backend: Dart + Flutter + Firebase
-- Database: Firebase Firestore
-- Authentication: JWT, Google OAuth
-- File Storage: Cloudinary
+For help getting started with Flutter development, view the
+[online documentation](https://docs.flutter.dev/), which offers tutorials,
+samples, guidance on mobile development, and a full API reference.
