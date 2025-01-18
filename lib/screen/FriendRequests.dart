@@ -11,7 +11,8 @@ class FriendRequests extends StatefulWidget {
   State<FriendRequests> createState() => _FriendRequestsState();
 }
 
-class _FriendRequestsState extends State<FriendRequests> with SingleTickerProviderStateMixin {
+class _FriendRequestsState extends State<FriendRequests>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   final TextEditingController searchController = TextEditingController();
   List<Map<String, dynamic>> requests = [];
@@ -26,6 +27,7 @@ class _FriendRequestsState extends State<FriendRequests> with SingleTickerProvid
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
+
     fetchReceivedRequests();
   }
 
@@ -82,29 +84,34 @@ class _FriendRequestsState extends State<FriendRequests> with SingleTickerProvid
 
   Future<void> _updateFriendsList(String friendEmail) async {
     final usersCollection = FirebaseFirestore.instance.collection('users');
-    
-    // Update current user's friends list
+
     final currentUserDoc = await usersCollection
         .where('email', isEqualTo: currentUser!.email)
         .get();
+
     if (currentUserDoc.docs.isNotEmpty) {
-      List<String> currentUserFriends = List<String>.from(
-          currentUserDoc.docs.first['friends'] ?? []);
-      if (!currentUserFriends.contains(friendEmail)) {
-        currentUserFriends.add(friendEmail);
-        await currentUserDoc.docs.first.reference.update({
-          'friends': currentUserFriends,
-        });
+      try {
+
+        List<String> currentUserFriends =
+            List<String>.from(currentUserDoc.docs.first['friends'] ?? []);
+        print(currentUserFriends[0]);
+        if (!currentUserFriends.contains(friendEmail)) {
+          currentUserFriends.add(friendEmail);
+          await currentUserDoc.docs.first.reference.update({
+            'friends': currentUserFriends,
+          });
+        }
+      } catch (e) {
+        print(e);
       }
     }
 
     // Update friend's friends list
-    final friendDoc = await usersCollection
-        .where('email', isEqualTo: friendEmail)
-        .get();
+    final friendDoc =
+        await usersCollection.where('email', isEqualTo: friendEmail).get();
     if (friendDoc.docs.isNotEmpty) {
-      List<String> friendFriends = List<String>.from(
-          friendDoc.docs.first['friends'] ?? []);
+      List<String> friendFriends =
+          List<String>.from(friendDoc.docs.first['friends'] ?? []);
       if (!friendFriends.contains(currentUser!.email)) {
         friendFriends.add(currentUser!.email!);
         await friendDoc.docs.first.reference.update({
@@ -255,7 +262,8 @@ class _FriendRequestsState extends State<FriendRequests> with SingleTickerProvid
   }
 
   Widget _buildRequestsList() {
-    final displayRequests = searchController.text.isNotEmpty ? filteredRequests : requests;
+    final displayRequests =
+        searchController.text.isNotEmpty ? filteredRequests : requests;
 
     if (displayRequests.isEmpty) {
       return Center(
@@ -281,7 +289,8 @@ class _FriendRequestsState extends State<FriendRequests> with SingleTickerProvid
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: displayRequests.length,
-      itemBuilder: (context, index) => _buildRequestTile(displayRequests[index]),
+      itemBuilder: (context, index) =>
+          _buildRequestTile(displayRequests[index]),
     );
   }
 

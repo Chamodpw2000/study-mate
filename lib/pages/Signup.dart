@@ -22,7 +22,11 @@ class Signup extends StatelessWidget {
       accessToken: googleAuth.accessToken,
     );
 
+
+
     return await FirebaseAuth.instance.signInWithCredential(credential);
+
+
   }
 
   @override

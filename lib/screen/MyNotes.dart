@@ -318,9 +318,7 @@ class _MyNotesState extends State<MyNotes> {
       desc: 'Are you sure you want to delete this note?',
       btnCancelOnPress: () {},
       btnOkOnPress: () {
-        print('===================================================');
         print(note['publicId']);
-        print('===================================================');
 
         deleteFromCloudinary(note['publicId']);
 

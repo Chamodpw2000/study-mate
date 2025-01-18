@@ -244,20 +244,41 @@ class _SignupwithemailState extends State<Signupwithemail> {
   }
 
   Future<void> signUp() async {
+    // final auth = FirebaseAuth.instance;
+    // print((auth));
+
+    // await auth.createUserWithEmailAndPassword(
+    //   email: emailc.text,
+    //   password: passwordc.text,
+    // );
+    // await addDetails();
+
     final auth = FirebaseAuth.instance;
-    await auth.createUserWithEmailAndPassword(
+
+    // Create user and get UserCredential
+    final UserCredential userCredential =
+        await auth.createUserWithEmailAndPassword(
       email: emailc.text,
       password: passwordc.text,
     );
-    await addDetails();
+
+    // Get the UID from the User object
+    final String uid = userCredential.user!.uid;
+
+    print(uid);
+
+    // Pass the UID to addDetails
+    await addDetails(uid);
   }
 
-  Future<void> addDetails() async {
+  Future<void> addDetails(String uid) async {
     try {
       await FirebaseFirestore.instance.collection("users").add({
         "email": emailc.text,
         "fname": fnamec.text,
         "lname": lnamec.text,
+        "uid": uid,
+        "friends": []
       });
     } catch (e) {
       print(e);
